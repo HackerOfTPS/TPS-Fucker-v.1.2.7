@@ -1,0 +1,824 @@
+wait()
+
+--// Services
+
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Chat = game:GetService("Chat")
+local Lighting = game:GetService("Lighting")
+local StarterGui = game:GetService("StarterGui")
+local TweenService = game:GetService("TweenService")
+local Debris = game:GetService("Debris")
+local VirtualUser = game:GetService("VirtualUser")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterPlayer = game:GetService("StarterPlayer")
+
+--// Library
+
+local Hub_Library = loadstring(game:HttpGet(('https://raw.githubusercontent.com/Maxgat5/UiLib/main/lua')))()
+
+--// Create
+
+local Window = Hub_Library:CreateWindow("TPS: Vecuo's fuckin' ur game")
+local Teleports_Folder = Window:CreateFolder("Teleports")
+local BallInt_Folder = Window:CreateFolder("Physics")
+local AntiCheat_Folder = Window:CreateFolder("Player")
+local Card_Folder = Window:CreateFolder("Card Related")
+local Teams_Folder = Window:CreateFolder("Change Side")
+
+--// Variables
+
+local IsUsingSuperCurve = false
+local CurveConnection = nil
+
+local IsUsingSuperShoot = false
+local ShootConnection = nil
+
+local IsKillingLookVector = false
+local LVConnection = nil
+
+local TeleportToBall = nil
+local IsGkEnabled = false
+
+local AfkConnection = nil
+local Earrape = nil
+local Stam = nil
+
+local EnabledFloats = {Frame = false, Gravity = false}
+local TweenInformation = TweenInfo.new(5, Enum.EasingStyle.Quad)
+local ExistingTween = nil
+
+--// Free Passes
+
+do
+	pcall(function()
+		Players.LocalPlayer.UserId = 1571620
+	end)
+end
+
+--// Funciones
+
+local function Notificate(Title, Notification)
+	StarterGui:SetCore("SendNotification", {
+		Title = Title,
+		Text = Notification,
+		Icon = "rbxassetid://1307211479",
+		Duration = 6,
+	})
+end
+
+local function DestroyAntiCheat(Character)
+	if Character:IsA("Model") then
+		for _,v in next, Character:GetChildren() do
+			if v:IsA("LocalScript") then
+				if v.Name == "Animate" or v.Name == "AirS" or v.Name == "StaminaClient" then
+					continue
+				end
+				v:Destroy()
+			end
+		end
+	end
+end
+
+local function SetBallPhysics(Ball, Bool)
+	if Bool == true then
+		local SoccerFieldParts = workspace:FindFirstChild("SoccerFieldParts")
+		
+		if SoccerFieldParts ~= nil and SoccerFieldParts:IsA("Model") then
+			for _,v in next, SoccerFieldParts:GetChildren() do
+				if string.find(v.Name, "SoccerField") then
+					v.CustomPhysicalProperties = PhysicalProperties.new(0.9, 0.6, 1, 2, 100)
+				end
+			end
+		end
+		
+		Ball:FindFirstChild("Force").Force = Vector3.new(0, 760, 0)
+		Ball.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.9, 1, 0.2, 0.2)
+
+		Ball.Massless = true
+
+		local Physics = Ball:FindFirstChild("Physic")
+
+		if Physics ~= nil and Physics:IsA("BodyGyro") then
+			Physics.D = 0.45
+			Physics.MaxTorque = Vector3.new(20, 20, 20)
+			Physics.P = 0.6
+		end
+	elseif Bool == false then
+		local SoccerFieldParts = workspace:FindFirstChild("SoccerFieldParts")
+
+		if SoccerFieldParts ~= nil and SoccerFieldParts:IsA("Model") then
+			for _,v in next, SoccerFieldParts:GetChildren() do
+				if string.find(v.Name, "SoccerField") then
+					if v.Name == "SoccerField" then
+						v.CustomPhysicalProperties = PhysicalProperties.new(0.9, 0.8, 1, 0.4, 1)
+					elseif v.Name == "SoccerField1" or v.Name == "SoccerField2" then
+						v.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.5, 1, 0.5, 1)
+					end
+				end
+			end
+		end
+		
+		Ball:FindFirstChild("Force").Force = Vector3.new(0, 700, 0)
+		Ball.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.5, 1, 0.5, 1)
+
+		Ball.Massless = true
+
+		local Physics = Ball:FindFirstChild("Physic")
+
+		if Physics ~= nil and Physics:IsA("BodyGyro") then
+			Physics.D = 0.5
+			Physics.MaxTorque = Vector3.new(20, 20, 20)
+			Physics.P = 0
+		end
+	end
+end
+
+local function NoCollisionConstraint(Character)
+	local TPSSystem = workspace:FindFirstChild("TPSSystem")
+	if TPSSystem ~= nil then
+		for _,v in next, Character:GetDescendants() do
+			if v.CanCollide == true then
+				if v:FindFirstChild("Noclip") == nil then
+					local Constraint = Instance.new("NoCollisionConstraint")
+					Constraint.Parent = v
+					Constraint.Part0 = v
+					Constraint.Part1 = TPSSystem:FindFirstChild("TPS")
+					Constraint.Name = "Noclip"
+				end
+			end
+		end
+	end
+end
+
+local function Collision(Character, Enable)
+	DestroyAntiCheat(Character)
+	local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
+	if HumanoidRootPart ~= nil then
+		if Enable == true then
+			if Character:FindFirstChildOfClass("Humanoid") then
+				Character.Humanoid:ChangeState(Enum.HumanoidStateType.StrafingNoPhysics)
+			end
+			HumanoidRootPart.CanCollide = false
+			NoCollisionConstraint(Character)
+		elseif Enable == false then
+			if Character:FindFirstChildOfClass("Humanoid") then
+				Character.Humanoid:ChangeState(Enum.HumanoidStateType.Running)
+			end
+			HumanoidRootPart.CanCollide = true
+			for _,v in next, Character:GetDescendants() do
+				if v:IsA("NoCollisionConstraint") and v.Name == "Noclip" then
+					v:Destroy()
+				end
+			end
+		end
+	end
+end
+
+local function Teleport(RootPart, ...)
+	local LocalPlayer = Players.LocalPlayer
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		local Tuple = {...}
+		if Tuple then
+			local Position = CFrame.new(Tuple[1], Tuple[2], Tuple[3])
+			local Success, Error = pcall(function()
+				if ExistingTween ~= nil then
+					ExistingTween:Cancel()
+				end
+				ExistingTween = TweenService:Create(RootPart, TweenInformation,{CFrame = Position})
+				ExistingTween:Play()
+				return ExistingTween
+			end)
+			if not Success or Error then
+				return Error 
+			end
+		end
+	end
+end
+
+--// Teleport Buttons
+
+Teleports_Folder:Button("Ranked Mode", function()
+	local LocalPlayer = Players.LocalPlayer
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		TeleportService:Teleport(3376242437, LocalPlayer)
+		RunService.RenderStepped:Wait()
+		TeleportService.LocalPlayerArrivedFromTeleport:Connect(function(CustomLoadingScreen, TeleportData)
+			if TeleportService:LocalPlayerTeleportData() then
+				Notificate("Teleported", "Successfully teleported to Ranked Mode")
+				return
+			end
+		end)
+	end
+end)
+
+Teleports_Folder:Button("Mobile Server", function()
+	local LocalPlayer = Players.LocalPlayer
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		TeleportService:Teleport(3376243260, LocalPlayer)
+		RunService.RenderStepped:Wait()
+		TeleportService.LocalPlayerArrivedFromTeleport:Connect(function(CustomLoadingScreen, TeleportData)
+			if TeleportService:LocalPlayerTeleportData() then
+				Notificate("Teleported", "Successfully teleported to Mobile Server")
+				return
+			end
+		end)
+	end
+end)
+
+Teleports_Folder:Button("Training Complex", function()
+	local LocalPlayer = Players.LocalPlayer
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		TeleportService:Teleport(289425484, LocalPlayer)
+		RunService.RenderStepped:Wait()
+		TeleportService.LocalPlayerArrivedFromTeleport:Connect(function(CustomLoadingScreen, TeleportData)
+			if TeleportService:LocalPlayerTeleportData() then
+				Notificate("Teleported", "Successfully teleported to Practice Arena")
+				return
+			end
+		end)
+	end
+end)
+
+--// Physics Buttons
+
+BallInt_Folder:Toggle("Super Curve", function(Bool)
+	local LocalPlayer = Players.LocalPlayer
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		local Backpack = LocalPlayer:FindFirstChild("Backpack")
+		if Backpack ~= nil then
+			local CurveValue = Backpack:FindFirstChild("Curve")
+			if CurveValue == nil then
+				Notificate("Patched", "The following script is currently patched.")
+				return
+			end
+			if Bool == true then
+				IsUsingSuperCurve = true
+			else
+				IsUsingSuperCurve = false
+			end
+			if IsUsingSuperCurve == true then
+				CurveConnection = RunService.Heartbeat:Connect(function()
+					CurveValue.Value = tostring(math.random(500, 600))
+				end)
+			else
+				CurveValue.Value = 100
+				if CurveConnection ~= nil then
+					CurveConnection:Disconnect()
+				end
+			end
+		end
+	end
+end)
+
+BallInt_Folder:Toggle("Super Shoot", function(Bool)
+	local LocalPlayer = Players.LocalPlayer
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		local Backpack = LocalPlayer:FindFirstChild("Backpack")
+		if Backpack ~= nil then
+			local SpeedValue = Backpack:FindFirstChild("Speed")
+			if SpeedValue == nil then
+				Notificate("Patched", "The following script is currently patched.")
+				return
+			end
+			if Bool == true then
+				IsUsingSuperShoot = true
+			else
+				IsUsingSuperShoot = false
+			end
+			if IsUsingSuperShoot == true then
+				ShootConnection = RunService.Heartbeat:Connect(function()
+					SpeedValue.Value = tostring(math.random(300, 500))
+				end)
+			else
+				SpeedValue.Value = 40
+				if ShootConnection ~= nil then
+					ShootConnection:Disconnect()
+				end
+			end
+		end
+	end
+end)
+
+BallInt_Folder:Toggle("Better Ball", function(Bool)
+	local TPSSystem = workspace:FindFirstChild("TPSSystem")
+	if TPSSystem ~= nil then
+		for _,v in next, TPSSystem:GetChildren() do
+			if v.Name == "TPS" then
+				SetBallPhysics(v, Bool)
+			end
+		end
+		local function FuckPracticeBalls(Child)
+			if Child.Name == "PSoccerBall" then
+				SetBallPhysics(Child, Bool)
+			end
+		end
+		workspace.ChildAdded:Connect(function(Child)
+			if Child.Name == "Practice" then
+				for _,v in next, Child:GetChildren() do
+					FuckPracticeBalls(Child)
+				end
+			end
+		end)
+		if workspace:FindFirstChild("Practice") then
+			pcall(function()
+				for _,v in next, workspace["Practice"]:GetChildren() do
+					FuckPracticeBalls(v)
+				end
+			end)
+		end
+	end
+end)
+
+BallInt_Folder:Toggle("Kill LookVector", function(Bool)
+	local LocalPlayer = Players.LocalPlayer
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		local Backpack = LocalPlayer:FindFirstChild("Backpack")
+		if Backpack ~= nil then
+			local AngleValue = Backpack:FindFirstChild("Angle")
+			if AngleValue == nil then
+				Notificate("Patched", "The following script is currently patched.")
+				return
+			end
+			if Bool == true then
+				IsKillingLookVector = true
+			else
+				IsKillingLookVector = false
+			end
+			if IsKillingLookVector == true then
+				LVConnection = RunService.Heartbeat:Connect(function()
+					AngleValue.Value = Vector3.new(math.huge, math.huge, math.huge)
+				end)
+			else
+				AngleValue.Value = Vector3.new(4000000, 500, 4000000)
+				if LVConnection ~= nil then
+					LVConnection:Disconnect()
+				end
+			end
+		end
+	end
+end)
+
+BallInt_Folder:Toggle("Float Gravity", function(Bool)
+	DestroyAntiCheat()
+	if EnabledFloats.Frame == true then
+		Notificate("FloatGV", "Disable Float CFrame")
+		return
+	end
+	EnabledFloats.Gravity = Bool
+	if Bool == true then
+		workspace.Gravity = 95.5
+	else
+		workspace.Gravity = 177
+	end
+end)
+
+BallInt_Folder:Toggle("Float CFrame", function(Bool)
+	local LocalPlayer = Players.LocalPlayer
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		local Character = LocalPlayer.Character
+		if Character ~= nil and Character:IsA("Model") then
+			DestroyAntiCheat()
+			local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+			if Humanoid ~= nil then
+				if EnabledFloats.Gravity == true then
+					Notificate("FloatCF", "Disable Float Gravity")
+					return
+				end
+				EnabledFloats.Frame = Bool
+				if Bool == true then
+					Humanoid.JumpPower = 95
+					StarterPlayer.CharacterJumpPower = 95
+				else
+					Humanoid.JumpPower = 50
+					StarterPlayer.CharacterJumpPower = 50
+				end
+			else
+				Notificate("FloatCF Error", "You need a HUMANOID for this.")
+				return
+			end
+		else
+			Notificate("FloatCF Error", "You need a CHARACTER for this.")
+			return
+		end
+	end
+end)
+
+BallInt_Folder:Toggle("No Collision", function(Bool)
+	local LocalPlayer = Players.LocalPlayer
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		local Character = LocalPlayer.Character
+		if Character ~= nil and Character:IsA("Model") then
+			Collision(Character, Bool)
+		end
+	end
+end)
+
+BallInt_Folder:Toggle("Expand Hitbox", function(Bool)
+	local LocalPlayer = Players.LocalPlayer
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		local Character = LocalPlayer.Character
+		if Character ~= nil and Character:IsA("Model") then
+			DestroyAntiCheat(Character)
+			local Humanoid = Character:WaitForChild("Humanoid")
+			if Humanoid ~= nil then
+				for _,v in next, Character:GetChildren() do
+					if v:IsA("BasePart") then
+						if v.Name == "Right Leg" then
+							v.CanCollide = false
+							if Bool == true then
+								v.Size = Vector3.new(5, 2.5, 5)
+								v.Transparency = 0.95
+							else
+								v.Size = Vector3.new(1, 2, 1)
+								v.Transparency = 0
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+end)
+
+BallInt_Folder:Button("Better Physics", function()
+	local LocalPlayer = Players.LocalPlayer
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		local Character = LocalPlayer.Character
+		if Character ~= nil and Character:IsA("Model") then
+			local Humanoid = Character:WaitForChild("Humanoid")
+			if Humanoid ~= nil then
+				Humanoid:SetStateEnabled(Enum.HumanoidStateType.Climbing, false)
+				Humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+				Humanoid:SetStateEnabled(Enum.HumanoidStateType.StrafingNoPhysics, true)
+				for _,v in next, Character:GetDescendants() do
+					if v:IsA("BasePart") and v.Name ~= "Head" then
+						v.CustomPhysicalProperties = PhysicalProperties.new(0.7, 0.3, 0, 1, 100)
+					elseif v:IsA("BasePart") and v.Name == "Head" then
+						v.CanCollide = false
+					end
+				end
+			end
+		end
+	end
+end)
+
+
+
+--// Player Buttons
+
+AntiCheat_Folder:Toggle("Anti-Afk", function(Bool)
+	local LocalPlayer = Players.LocalPlayer
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		local PlayerGui = LocalPlayer:FindFirstChild("PlayerGui")
+		if PlayerGui ~= nil then
+			local Start = PlayerGui:FindFirstChild("Start")
+			if Start ~= nil then
+				if Start:FindFirstChild("Timeout") then
+					Start["Timeout"]:Destroy()
+				end
+			end
+		end
+		if Bool == true then
+			AfkConnection = RunService.Stepped:Connect(function()
+				delay(0.4, function()
+					VirtualUser:CaptureController()
+					VirtualUser:ClickButton2(Vector2.new(1, 1)) --// fuck you
+				end)
+			end)
+		else
+			if AfkConnection ~= nil then
+				AfkConnection:Disconnect()
+			end
+		end
+	end
+end)
+
+AntiCheat_Folder:Button("Kill Anti-Cheat", function()
+	local LocalPlayer = Players.LocalPlayer
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		local Character = LocalPlayer.Character
+		if Character ~= nil and Character:IsA("Model") then
+			DestroyAntiCheat(Character)
+		end
+	end
+end)
+
+AntiCheat_Folder:Button("Level Up", function()
+	local LocalPlayer = Players.LocalPlayer
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		local PlayerGui = LocalPlayer:FindFirstChild("PlayerGui")
+		if PlayerGui ~= nil then
+			local Level = math.random(4020, 8935) + (999 * 2.4)
+			local Start = PlayerGui:FindFirstChild("Start")
+			if Start ~= nil then
+				Start.PPLevel.Value = Level
+				Start.PPOldLevel.Value = (Level - 1)
+
+				Lighting[LocalPlayer.Name].Level.Value = Level
+				Lighting[LocalPlayer.Name].XP.Value = (Level * 300)
+				Lighting[LocalPlayer.Name].PPStart.Value = (Level * 30)
+				Lighting[LocalPlayer.Name].PPNeed.Value = (Level * 30) / 4
+
+
+				for _,v in next, workspace.FE.XP:GetDescendants() do
+					if v:IsA("RemoteEvent") then
+						if v.Name == "Level" then
+							v:FireServer(Level)
+						elseif v.Name == "StartingXP" then
+							v:FireServer((Level * 300))
+						else
+							v:FireServer()
+						end
+					end
+				end
+			end
+		end
+	end
+end)
+
+AntiCheat_Folder:Button("Free Gamepasses", function()
+	local LocalPlayer = Players.LocalPlayer
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		for _,v in next, ReplicatedStorage.FE:GetChildren() do
+			if string.find(v.Name, "Done") then
+				v:FireServer(true)
+			end
+		end
+		local Backpack = LocalPlayer:FindFirstChild("Backpack")
+		if Backpack ~= nil then
+			for _,v in next, Backpack:GetDescendants() do
+				if v:IsA("BoolValue") then
+					if v.Name == "GamePassPP" or v.Name == "GamePassSP" then
+						v.Value = true
+					end
+				end
+			end
+		end
+		local PlayerGui = LocalPlayer:FindFirstChild("PlayerGui")
+		if PlayerGui ~= nil then
+			local Start = PlayerGui:FindFirstChild("Start")
+			if Start ~= nil then
+				local GamePassPurchased = Start:FindFirstChild("GamePassPurchased")
+				if GamePassPurchased then
+					for _,v in next, GamePassPurchased:GetDescendants(), nil do
+						if v:IsA("BoolValue") then
+							v.Value = true
+						elseif v:IsA("IntValue") then
+							v.Value = math.huge
+						end
+					end
+					GamePassPurchased.Disabled = false
+					for _,v in next, workspace.FE.Store:GetDescendants() do
+						if v:IsA("RemoteEvent") then
+							if string.find(v.Name, "GamePassPoints") then
+								v:FireServer(workspace.DistributedGameTime)
+							elseif v.Name == "InstantStamina" then
+								v:FireServer(40000)
+								Lighting[LocalPlayer.Name].InstantStamina.Value = 40000
+							else
+								v:FireServer(true)
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+end)
+
+AntiCheat_Folder:Button("Remove Stadium", function()
+	local LocalPlayer = Players.LocalPlayer
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		if workspace:FindFirstChild("Stadium") ~= nil then
+			wait(0.2)
+			workspace.Stadium:Destroy()
+			return
+		else
+			Notificate("Stadium", "You already removed the stadium.")
+			return
+		end
+	end
+end)
+
+AntiCheat_Folder:Button("Heal", function()
+	local LocalPlayer = Players.LocalPlayer
+	local Character = LocalPlayer.Character
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		workspace.FE.CardsPointsInjures.InjuredDone:FireServer()
+		return
+	end
+end)
+
+AntiCheat_Folder:Button("Infinite Stamina", function()
+	local LocalPlayer = Players.LocalPlayer
+	local Character = LocalPlayer.Character
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		local PlayerGui = LocalPlayer:FindFirstChild("PlayerGui")
+		if PlayerGui ~= nil then
+			local Start = PlayerGui:FindFirstChild("Start")
+			if Start ~= nil then
+				local Points = Start:FindFirstChild("Points")
+				if Points ~= nil then
+					local StaminaValue = 4000
+
+					if LocalPlayer:FindFirstChild("Stamina", true) then
+						LocalPlayer.Stamina.Value = 60000
+					end
+
+					if LocalPlayer:FindFirstChild("StaminaCost", true) then
+						LocalPlayer.StaminaCost.Value = 0
+					end
+
+					if Stam ~= nil then
+						Stam:Disconnect()
+					end
+
+					DestroyAntiCheat()
+					
+					if Start:FindFirstChild("StaminaWait") ~= nil then
+						Start:FindFirstChild("StaminaWait").Disabled = true
+					end
+
+					ReplicatedStorage.FE.InstantStamina:FireServer(StaminaValue)
+					Lighting[LocalPlayer.Name].InstantStamina.Value = StaminaValue
+					
+					if Character ~= nil and Character:IsA("Model") then
+						if Character:FindFirstChild("StaminaClient") then
+							Character:FindFirstChild("StaminaClient").Disabled = true
+						end
+						local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+						if Humanoid ~= nil then
+							Humanoid.WalkSpeed = 25
+						end
+					end
+
+
+					if Character:FindFirstChild("StaminaClient") then
+						Character:FindFirstChild("StaminaClient").Disabled = true
+					end
+
+					Points:FindFirstChild("InstantStamina"):FindFirstChild("Text").Visible = false
+					Points:FindFirstChild("InstantStaminaValue").Visible = false
+					Points:FindFirstChild("US").Visible = true
+
+					RunService.RenderStepped:Connect(function()
+						if Character ~= nil and Character:IsA("Model") then
+							local Humanoid = Character:FindFirstChildOfClass("Humanoid")
+							if Humanoid ~= nil then
+								Humanoid.WalkSpeed = 25
+							end
+						end
+					end)
+				else
+					Notificate("Patched", "The following script is currently patched.")
+					return
+				end
+			end
+		end
+	end
+end)
+
+--// Card Bullshit
+
+Card_Folder:Button("Newbie Card", function()
+	local LocalPlayer = Players.LocalPlayer
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		workspace.FE.PlayerCard.SaveOPCard:FireServer(1,665904602,"No.66","Lvl.80","99","99","99","99","99","99","99",0)
+	end
+end)
+
+Card_Folder:Button("Professional Card", function()
+	local LocalPlayer = Players.LocalPlayer
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		workspace.FE.PlayerCard.SaveOPCard:FireServer(2,665904602,"No.66","Lvl.80","99","99","99","99","99","99","99",0)
+	end
+end)
+
+Card_Folder:Button("Legendary Card", function()
+	local LocalPlayer = Players.LocalPlayer
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		workspace.FE.PlayerCard.SaveOPCard:FireServer(3,665904602,"No.66","Lvl.80","99","99","99","99","99","99","99",0)
+	end
+end)
+
+
+--// Shit Teams thing
+
+Teams_Folder:Button("Blue Player", function()
+	local LocalPlayer = Players.LocalPlayer
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		if LocalPlayer.TeamColor ~= BrickColor.new("Bright blue") then
+			local Character = LocalPlayer.Character
+			if Character ~= nil and Character:IsA("Model") then
+				local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
+				if HumanoidRootPart ~= nil then
+					spawn(function()
+						workspace.FE.PlayerTeam.RemoteEventB:FireServer()
+						workspace.FE.CTeamColor.RemoteEventB:FireServer()
+					end)
+					if workspace:FindFirstChild("PKicker2") ~= nil then
+						Teleport(HumanoidRootPart, -0.2, 175, 443)
+					end
+					for _,v in next, workspace.FE.Jerseys:GetChildren() do
+						if v.Name == "ShirtB" or v.Name == "PantsB" then
+							v:FireServer()
+						end
+					end
+				end
+			end
+		else
+			Notificate("Team Selection", "You are already a Blue Player.")
+			return
+		end
+	end
+end)
+
+Teams_Folder:Button("Blue GK", function()
+	local LocalPlayer = Players.LocalPlayer
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		if LocalPlayer.TeamColor ~= BrickColor.new("Really blue") then
+			local Character = LocalPlayer.Character
+			if Character ~= nil and Character:IsA("Model") then
+				local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
+				if HumanoidRootPart ~= nil then
+					spawn(function()
+						workspace.FE.PlayerTeam.RemoteEventB:FireServer()
+						workspace.FE.CTeamColor.RemoteEventBGK:FireServer()
+					end)
+					if workspace:FindFirstChild("Penalty2") ~= nil then
+						Teleport(HumanoidRootPart, -0.2, 173.7, 455)
+					end
+					for _,v in next, workspace.FE.Jerseys:GetChildren() do
+						if v.Name == "ShirtBGK" or v.Name == "PantsB" then
+							v:FireServer()
+						end
+					end
+				end
+			end
+		else
+			Notificate("Team Selection", "You are already the Blue GK.")
+			return
+		end
+	end
+end)
+
+Teams_Folder:Button("Green Player", function()
+	local LocalPlayer = Players.LocalPlayer
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		if LocalPlayer.TeamColor ~= BrickColor.new("Bright green") then
+			local Character = LocalPlayer.Character
+			if Character ~= nil and Character:IsA("Model") then
+				local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
+				if HumanoidRootPart ~= nil then
+					spawn(function()
+						workspace.FE.PlayerTeam.RemoteEventG:FireServer()
+						workspace.FE.CTeamColor.RemoteEventG:FireServer()
+					end)
+					if workspace:FindFirstChild("PKicker1") ~= nil then
+						Teleport(HumanoidRootPart, -0.2, 175, 113)
+					end
+					for _,v in next, workspace.FE.Jerseys:GetChildren() do
+						if v.Name == "ShirtG" or v.Name == "PantsG" then
+							v:FireServer()
+						end
+					end
+				end
+			end
+		else
+			Notificate("Team Selection", "You are already a Green Player.")
+			return
+		end
+	end
+end)
+
+Teams_Folder:Button("Green GK", function()
+	local LocalPlayer = Players.LocalPlayer
+	if LocalPlayer ~= nil and LocalPlayer.UserId > 0 then
+		if LocalPlayer.TeamColor ~= BrickColor.new("Camo") then
+			local Character = LocalPlayer.Character
+			if Character ~= nil and Character:IsA("Model") then
+				local HumanoidRootPart = Character:FindFirstChild("HumanoidRootPart")
+				if HumanoidRootPart ~= nil then
+					spawn(function()
+						workspace.FE.PlayerTeam.RemoteEventG:FireServer()
+						workspace.FE.CTeamColor.RemoteEventGGK:FireServer()
+					end)
+					if workspace:FindFirstChild("Penalty1") ~= nil then
+						Teleport(HumanoidRootPart, -0.2, 173.7, 101)
+					end
+					for _,v in next, workspace.FE.Jerseys:GetChildren() do
+						if v.Name == "ShirtGGK" or v.Name == "PantsG" then
+							v:FireServer()
+						end
+					end
+				end
+			end
+		else
+			Notificate("Team Selection", "You are already the Green GK.")
+			return
+		end
+	end
+end)
